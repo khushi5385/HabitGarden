@@ -3,5 +3,5 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  base: '/HabitGarden/'
+  base: '/HabitGarden/', // MUST MATCH repo name exactly
 })
