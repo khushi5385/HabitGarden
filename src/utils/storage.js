@@ -24,9 +24,3 @@ export const saveCurrentUser = (user) => {
 export const removeCurrentUser = () => {
     localStorage.removeItem('currentGardenUser');
 };
-
-// Get user by id
-export const getUserById = (id) => {
-    const users = getUsers();
-    return users.find(u => u.id === id) || null;
-};
