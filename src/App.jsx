@@ -200,6 +200,8 @@ function PlantCard({ habit, onComplete, onDelete, onUpdate }) {
           <input value={editName} onChange={(e) => setEditName(e.target.value)} className="edit-input" placeholder="Habit name" />
           <div className="edit-row">
             <label>⏰ Reminder:</label>
+          </div>
+          <div className="edit-row">
             <input type="time" value={editReminder} onChange={(e) => setEditReminder(e.target.value)} className="edit-time" />
           </div>
           <div className="edit-row">
@@ -343,8 +345,11 @@ function GardenApp({ user, onLogout }) {
   let isDragging = false;
   let startX, scrollLeft;
 
+  // Load habits from user when component mounts
   useEffect(() => {
-    setHabits(user.habits || []);
+    if (user && user.habits) {
+      setHabits(user.habits);
+    }
   }, [user]);
 
   const showToast = (message) => {
@@ -355,11 +360,17 @@ function GardenApp({ user, onLogout }) {
 
   const saveUserHabits = (newHabits) => {
     setHabits(newHabits);
+
+    // Update in users array
     const users = JSON.parse(localStorage.getItem('gardenUsers') || '[]');
     const updatedUsers = users.map(u =>
       u.id === user.id ? { ...u, habits: newHabits, totalXP: newHabits.reduce((s, h) => s + h.xp, 0) } : u
     );
     localStorage.setItem('gardenUsers', JSON.stringify(updatedUsers));
+
+    // Update current user
+    const currentUser = { ...user, habits: newHabits, totalXP: newHabits.reduce((s, h) => s + h.xp, 0) };
+    localStorage.setItem('currentGardenUser', JSON.stringify(currentUser));
   };
 
   const addHabit = (name, goal, time, reminder, duration) => {
@@ -524,8 +535,26 @@ function GardenApp({ user, onLogout }) {
   const TopStreakPage = () => (
     <div className="full-page">
       <div className="page-header"><h2>🏆 Streak Champion</h2><p>Who's growing the strongest?</p></div>
-      <div className="top-streak-full"><div className="champion-card"><div className="champion-trophy">🏆👑🏆</div><div className="champion-name">{topHabit.name}</div><div className="champion-streak">🔥 {topHabit.streak} day streak!</div><div className="champion-flower">{getEmoji(topHabit.stage)}</div></div>
-        <div className="streak-full-list"><h3>📊 Leaderboard</h3>{habits.sort((a, b) => b.streak - a.streak).map((habit, index) => (<div key={habit.id} className="streak-full-item"><div className="streak-rank">{index + 1}</div><div className="streak-flower">{getEmoji(habit.stage)}</div><div className="streak-name" title={habit.name}>{habit.name.length > 20 ? habit.name.substring(0, 18) + '...' : habit.name}</div><div className="streak-count">🔥 {habit.streak}</div><div className="streak-xp">✨ {habit.xp}</div></div>))}</div></div>
+      <div className="top-streak-full">
+        <div className="champion-card">
+          <div className="champion-trophy">🏆👑🏆</div>
+          <div className="champion-name">{topHabit.name}</div>
+          <div className="champion-streak">🔥 {topHabit.streak} day streak!</div>
+          <div className="champion-flower">{getEmoji(topHabit.stage)}</div>
+        </div>
+        <div className="streak-full-list">
+          <h3>📊 Leaderboard</h3>
+          {habits.sort((a, b) => b.streak - a.streak).map((habit, index) => (
+            <div key={habit.id} className="streak-full-item">
+              <div className="streak-rank">{index + 1}</div>
+              <div className="streak-flower">{getEmoji(habit.stage)}</div>
+              <div className="streak-name" title={habit.name}>{habit.name.length > 20 ? habit.name.substring(0, 18) + '...' : habit.name}</div>
+              <div className="streak-count">🔥 {habit.streak}</div>
+              <div className="streak-xp">✨ {habit.xp}</div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 
@@ -533,7 +562,8 @@ function GardenApp({ user, onLogout }) {
   const ProfilePage = () => (
     <div className="full-page">
       <div className="page-header"><h2>👤 {user.fullName}'s Profile</h2><p>Your gardening journey</p></div>
-      <div className="profile-full"><div className="profile-avatar-large"></div>
+      <div className="profile-full">
+        <div className="profile-avatar-large"><div className="avatar-flower">🌸🌿🌻</div></div>
         <div className="profile-info-card">
           <div className="profile-info-item"><span className="profile-info-label">👤 Username:</span><span className="profile-info-value">{user.username}</span></div>
           <div className="profile-info-item"><span className="profile-info-label">📛 Full Name:</span><span className="profile-info-value">{user.fullName}</span></div>
@@ -548,12 +578,15 @@ function GardenApp({ user, onLogout }) {
           <div className="profile-stat-card"><div className="profile-stat-icon">🌱</div><div className="profile-stat-value">{habits.length}</div><div className="profile-stat-label">Plants</div></div>
           <div className="profile-stat-card"><div className="profile-stat-icon">⭐</div><div className="profile-stat-value">{Math.floor(totalXP / 100) + 1}</div><div className="profile-stat-label">Level</div></div>
         </div>
-        <div className="profile-badges"><h3>🏅 Achievements</h3><div className="badges-grid">
-          {totalStreak >= 7 && <div className="badge">🔥 7 Day Streak</div>}
-          {habits.length >= 5 && <div className="badge">🌿 5 Plants</div>}
-          {totalXP >= 500 && <div className="badge">⭐ 500 XP</div>}
-          {completedToday === habits.length && habits.length > 0 && <div className="badge">✅ Perfect Day</div>}
-        </div></div>
+        <div className="profile-badges">
+          <h3>🏅 Achievements</h3>
+          <div className="badges-grid">
+            {totalStreak >= 7 && <div className="badge">🔥 7 Day Streak</div>}
+            {habits.length >= 5 && <div className="badge">🌿 5 Plants</div>}
+            {totalXP >= 500 && <div className="badge">⭐ 500 XP</div>}
+            {completedToday === habits.length && habits.length > 0 && <div className="badge">✅ Perfect Day</div>}
+          </div>
+        </div>
         <button className="logout-btn" onClick={onLogout}>🚪 Logout</button>
       </div>
     </div>
@@ -562,7 +595,12 @@ function GardenApp({ user, onLogout }) {
   return (
     <div className="app">
       {showNotification && <div className="toast-notification">{notificationMsg}</div>}
-      <div className="header"><div className="header-top"><h1 className="logo">🌸 Habit Garden 🌿</h1><button className="add-icon" onClick={() => setShowModal(true)}>+</button></div></div>
+      <div className="header">
+        <div className="header-top">
+          <h1 className="logo">🌸 Habit Garden 🌿</h1>
+          <button className="add-icon" onClick={() => setShowModal(true)}>+</button>
+        </div>
+      </div>
       <div className="page-container">
         {currentPage === 'garden' && <GardenPage />}
         {currentPage === 'habits' && <HabitsPage />}
