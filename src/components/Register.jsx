@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { getUsers, saveUsers } from '../utils/storage';
 
 function Register({ onRegister, onSwitch }) {
     const [formData, setFormData] = useState({
@@ -22,7 +21,8 @@ function Register({ onRegister, onSwitch }) {
         setLoading(true);
         setError('');
 
-        const users = getUsers();
+        const users = JSON.parse(localStorage.getItem('gardenUsers') || '[]');
+        console.log('Existing users:', users);
 
         if (users.find(u => u.username === formData.username)) {
             setError('Username already exists');
@@ -36,6 +36,7 @@ function Register({ onRegister, onSwitch }) {
             return;
         }
 
+        // Default habits with proper IDs
         const defaultHabits = [
             {
                 id: Date.now(),
@@ -82,8 +83,15 @@ function Register({ onRegister, onSwitch }) {
             joinDate: new Date().toLocaleDateString()
         };
 
+        console.log('New user being created:', newUser);
+
         users.push(newUser);
-        saveUsers(users);
+        localStorage.setItem('gardenUsers', JSON.stringify(users));
+
+        // Verify save
+        const saved = localStorage.getItem('gardenUsers');
+        console.log('Verified save:', saved);
+
         onRegister(newUser);
         setLoading(false);
     };

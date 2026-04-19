@@ -8,7 +8,33 @@ import Garden from './pages/Garden';
 import Habits from './pages/Habits';
 import TopStreak from './pages/TopStreak';
 import Profile from './pages/Profile';
-import { getCurrentUser, saveCurrentUser, removeCurrentUser, getUsers, saveUsers } from './utils/storage';
+
+// Simple storage functions
+const getUsers = () => {
+  const users = localStorage.getItem('gardenUsers');
+  console.log('📖 getUsers from localStorage:', users);
+  return users ? JSON.parse(users) : [];
+};
+
+const saveUsers = (users) => {
+  console.log('💾 saveUsers to localStorage:', users);
+  localStorage.setItem('gardenUsers', JSON.stringify(users));
+};
+
+const getCurrentUser = () => {
+  const user = localStorage.getItem('currentGardenUser');
+  console.log('👤 getCurrentUser:', user);
+  return user ? JSON.parse(user) : null;
+};
+
+const saveCurrentUser = (user) => {
+  console.log('💾 saveCurrentUser:', user);
+  localStorage.setItem('currentGardenUser', JSON.stringify(user));
+};
+
+const removeCurrentUser = () => {
+  localStorage.removeItem('currentGardenUser');
+};
 
 function App() {
   const [user, setUser] = useState(null);
@@ -22,28 +48,28 @@ function App() {
 
   // Load user data on app start
   useEffect(() => {
-    const loadUserData = () => {
-      const savedUser = getCurrentUser();
-      console.log('Loaded user:', savedUser);
+    console.log('🔄 App loading...');
+    const savedUser = getCurrentUser();
+    console.log('📌 Saved user from storage:', savedUser);
 
-      if (savedUser) {
-        // Get fresh user data from users array
-        const users = getUsers();
-        const freshUser = users.find(u => u.id === savedUser.id);
+    if (savedUser) {
+      const users = getUsers();
+      const freshUser = users.find(u => u.id === savedUser.id);
 
-        if (freshUser) {
-          setUser(freshUser);
-          setHabits(freshUser.habits || []);
-          console.log('Habits loaded:', freshUser.habits);
-        } else {
-          setUser(savedUser);
-          setHabits(savedUser.habits || []);
-        }
+      if (freshUser) {
+        console.log('✅ Found fresh user:', freshUser);
+        console.log('📋 User habits:', freshUser.habits);
+        setUser(freshUser);
+        setHabits(freshUser.habits || []);
+      } else {
+        console.log('⚠️ User not found in users array, using saved user');
+        setUser(savedUser);
+        setHabits(savedUser.habits || []);
       }
-      setLoading(false);
-    };
-
-    loadUserData();
+    } else {
+      console.log('❌ No saved user found');
+    }
+    setLoading(false);
   }, []);
 
   const showToast = (message) => {
@@ -54,11 +80,13 @@ function App() {
 
   // Save habits to localStorage
   const saveUserHabits = (newHabits) => {
-    console.log('Saving habits:', newHabits);
+    console.log('💾 Saving habits:', newHabits);
     setHabits(newHabits);
 
     // Update in users array
     const users = getUsers();
+    console.log('📋 Current users:', users);
+
     const updatedUsers = users.map(u =>
       u.id === user.id ? { ...u, habits: newHabits, totalXP: newHabits.reduce((s, h) => s + h.xp, 0) } : u
     );
@@ -68,6 +96,8 @@ function App() {
     const updatedUser = { ...user, habits: newHabits, totalXP: newHabits.reduce((s, h) => s + h.xp, 0) };
     saveCurrentUser(updatedUser);
     setUser(updatedUser);
+
+    console.log('✅ Habits saved successfully!');
   };
 
   const addHabit = (name, goal, time, reminder, duration) => {
@@ -87,6 +117,7 @@ function App() {
       duration,
       dates: { [todayStr]: false }
     };
+    console.log('➕ Adding new habit:', newHabit);
     saveUserHabits([newHabit, ...habits]);
     showToast(`🌱 New habit planted!`);
   };
@@ -125,7 +156,7 @@ function App() {
   };
 
   const handleLogin = (userData) => {
-    console.log('Login user:', userData);
+    console.log('🔑 Login user:', userData);
     setUser(userData);
     setHabits(userData.habits || []);
     saveCurrentUser(userData);
@@ -133,7 +164,7 @@ function App() {
   };
 
   const handleRegister = (userData) => {
-    console.log('Register user:', userData);
+    console.log('📝 Register user:', userData);
     setUser(userData);
     setHabits(userData.habits || []);
     saveCurrentUser(userData);
